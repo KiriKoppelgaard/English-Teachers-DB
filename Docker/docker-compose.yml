@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: teacher_library_db
+    environment:
+      POSTGRES_DB: english_teachers_library
+      POSTGRES_USER: teacher_admin
+      POSTGRES_PASSWORD: teacher_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teacher_admin -d english_teachers_library"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
