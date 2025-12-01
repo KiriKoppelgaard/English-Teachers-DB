@@ -1,11 +1,15 @@
 """Generic CRUD operations."""
+import logging
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from TeacherLibrary.data.database import Base
 from TeacherLibrary.models.schemas import Book, DVD
+
+logger = logging.getLogger(__name__)
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -19,11 +23,16 @@ class CRUDBase:
 
     def create(self, db: Session, obj_data: Dict[str, Any]) -> ModelType:
         """Create a new record."""
-        db_obj = self.model(**obj_data)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
+        try:
+            db_obj = self.model(**obj_data)
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
+            return db_obj
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(f"Error creating {self.model.__name__}: {e}")
+            raise ValueError(f"Failed to create {self.model.__name__}: {str(e)}")
 
     def get(self, db: Session, id: int) -> Optional[ModelType]:
         """Get record by ID."""
@@ -63,22 +72,37 @@ class CRUDBase:
 
     def update(self, db: Session, id: int, obj_data: Dict[str, Any]) -> Optional[ModelType]:
         """Update a record."""
-        db_obj = self.get(db, id)
-        if db_obj:
+        try:
+            db_obj = self.get(db, id)
+            if not db_obj:
+                logger.warning(f"{self.model.__name__} with id {id} not found")
+                return None
+
             for key, value in obj_data.items():
                 setattr(db_obj, key, value)
             db.commit()
             db.refresh(db_obj)
-        return db_obj
+            return db_obj
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(f"Error updating {self.model.__name__} {id}: {e}")
+            raise ValueError(f"Failed to update {self.model.__name__}: {str(e)}")
 
     def delete(self, db: Session, id: int) -> bool:
         """Delete a record."""
-        db_obj = self.get(db, id)
-        if db_obj:
+        try:
+            db_obj = self.get(db, id)
+            if not db_obj:
+                logger.warning(f"{self.model.__name__} with id {id} not found")
+                return False
+
             db.delete(db_obj)
             db.commit()
             return True
-        return False
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(f"Error deleting {self.model.__name__} {id}: {e}")
+            raise ValueError(f"Failed to delete {self.model.__name__}: {str(e)}")
 
 
 # Create instances for each model

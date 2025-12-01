@@ -1,0 +1,48 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables
+.env
+
+# Data files
+data/raw/*.xlsx
+data/raw/*.csv
+
+# Docker
+Docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+tests/
+
+# Documentation
+*.md
+README.md
+
+# Local files
+local/
+
+# Poetry
+poetry.lock
+
+# Claude
+.claude/

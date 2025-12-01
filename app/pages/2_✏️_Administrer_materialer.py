@@ -10,7 +10,7 @@ from TeacherLibrary.data.database import SessionLocal
 from TeacherLibrary.models.crud import book_crud, dvd_crud
 from TeacherLibrary.models.validators import BookSchema, DVDSchema
 from TeacherLibrary.data.fetch_isbn import fetch_book_by_isbn
-from app.shared_utils import apply_custom_styling, render_page_header, get_column_mapping
+from app.shared_utils import apply_custom_styling, render_page_header, get_column_mapping, build_data_dict
 
 # Page config
 st.set_page_config(
@@ -93,16 +93,18 @@ try:
                 col1, col2 = st.columns(2)
 
                 with col1:
+                    book_number = st.number_input("Bognr.", min_value=0, value=None, step=1, placeholder="Valgfrit")
                     title = st.text_input(
                         "Titel *",
                         value=st.session_state.book_form_data.get("title", ""),
                         placeholder="Bogens titel"
                     )
                     author = st.text_input(
-                        "Forfatter *",
+                        "Forfatter",
                         value=st.session_state.book_form_data.get("author", ""),
                         placeholder="Forfatterens navn"
                     )
+                    location = st.text_input("Placering", placeholder="F.eks. gml.kælder")
                     theme = st.text_input("Tema", placeholder="Bogens tema")
                     geographical_area = st.text_input("Geografisk område", placeholder="F.eks. USA, UK, Danmark")
                     publication_year = st.number_input(
@@ -114,6 +116,8 @@ try:
                     )
 
                 with col2:
+                    borrowed_count = st.number_input("Udlånt (antal)", min_value=0, value=0, step=1)
+                    total_count = st.number_input("I alt (antal)", min_value=0, value=0, step=1)
                     genre = st.text_input(
                         "Genre",
                         value=st.session_state.book_form_data.get("genre", ""),
@@ -133,27 +137,18 @@ try:
                 submitted = st.form_submit_button("💾 Gem Bog", use_container_width=True)
 
                 if submitted:
-                    if not title or not author:
-                        st.error("❌ Titel og forfatter er påkrævet!")
+                    if not title:
+                        st.error("❌ Titel er påkrævet!")
                     else:
                         try:
-                            book_data = {
-                                "title": title,
-                                "author": author,
-                                "theme": theme if theme else None,
-                                "geographical_area": geographical_area if geographical_area else None,
-                                "publication_year": publication_year if publication_year else None,
-                                "genre": genre if genre else None,
-                                "subgenre": subgenre if subgenre else None,
-                                "material_type": material_type_field if material_type_field else None,
-                                "notes": notes if notes else None,
-                                "description": description if description else None
-                            }
-
-                            # Validate
+                            book_data = build_data_dict(
+                                book_number=book_number, title=title, author=author, location=location,
+                                borrowed_count=borrowed_count, total_count=total_count, theme=theme,
+                                geographical_area=geographical_area, publication_year=publication_year,
+                                genre=genre, subgenre=subgenre, material_type=material_type_field,
+                                notes=notes, description=description
+                            )
                             BookSchema(**book_data)
-
-                            # Create book
                             book_crud.create(db, book_data)
                             st.success(f"✅ Bogen '{title}' er tilføjet!")
                             st.session_state.book_form_data = {}
@@ -191,8 +186,10 @@ try:
                             col1, col2 = st.columns(2)
 
                             with col1:
+                                book_number = st.number_input("Bognr.", min_value=0, value=book.book_number if book.book_number else None, step=1)
                                 title = st.text_input("Titel *", value=book.title or "")
-                                author = st.text_input("Forfatter *", value=book.author or "")
+                                author = st.text_input("Forfatter", value=book.author or "")
+                                location = st.text_input("Placering", value=book.location or "")
                                 theme = st.text_input("Tema", value=book.theme or "")
                                 geographical_area = st.text_input("Geografisk område", value=book.geographical_area or "")
                                 publication_year = st.number_input(
@@ -204,6 +201,8 @@ try:
                                 )
 
                             with col2:
+                                borrowed_count = st.number_input("Udlånt (antal)", min_value=0, value=book.borrowed_count, step=1)
+                                total_count = st.number_input("I alt (antal)", min_value=0, value=book.total_count, step=1)
                                 genre = st.text_input("Genre", value=book.genre or "")
                                 subgenre = st.text_input("Undergenre", value=book.subgenre or "")
                                 material_type_field = st.text_input("Materialetype", value=book.material_type or "")
@@ -214,27 +213,18 @@ try:
                             update_submitted = st.form_submit_button("💾 Gem Ændringer", use_container_width=True)
 
                             if update_submitted:
-                                if not title or not author:
-                                    st.error("❌ Titel og forfatter er påkrævet!")
+                                if not title:
+                                    st.error("❌ Titel er påkrævet!")
                                 else:
                                     try:
-                                        update_data = {
-                                            "title": title,
-                                            "author": author,
-                                            "theme": theme if theme else None,
-                                            "geographical_area": geographical_area if geographical_area else None,
-                                            "publication_year": publication_year if publication_year else None,
-                                            "genre": genre if genre else None,
-                                            "subgenre": subgenre if subgenre else None,
-                                            "material_type": material_type_field if material_type_field else None,
-                                            "notes": notes if notes else None,
-                                            "description": description if description else None
-                                        }
-
-                                        # Validate
+                                        update_data = build_data_dict(
+                                            book_number=book_number, title=title, author=author, location=location,
+                                            borrowed_count=borrowed_count, total_count=total_count, theme=theme,
+                                            geographical_area=geographical_area, publication_year=publication_year,
+                                            genre=genre, subgenre=subgenre, material_type=material_type_field,
+                                            notes=notes, description=description
+                                        )
                                         BookSchema(**update_data)
-
-                                        # Update book
                                         book_crud.update(db, book_id, update_data)
                                         st.success(f"✅ Bogen '{title}' er opdateret!")
                                         st.rerun()
@@ -333,23 +323,12 @@ try:
                         st.error("❌ Titel og instruktør er påkrævet!")
                     else:
                         try:
-                            dvd_data = {
-                                "title": title,
-                                "director": director,
-                                "theme": theme if theme else None,
-                                "geographical_area": geographical_area if geographical_area else None,
-                                "publication_year": publication_year if publication_year else None,
-                                "genre": genre if genre else None,
-                                "subgenre": subgenre if subgenre else None,
-                                "material_type": material_type_field if material_type_field else None,
-                                "notes": notes if notes else None,
-                                "description": description if description else None
-                            }
-
-                            # Validate
+                            dvd_data = build_data_dict(
+                                title=title, director=director, theme=theme, geographical_area=geographical_area,
+                                publication_year=publication_year, genre=genre, subgenre=subgenre,
+                                material_type=material_type_field, notes=notes, description=description
+                            )
                             DVDSchema(**dvd_data)
-
-                            # Create DVD
                             dvd_crud.create(db, dvd_data)
                             st.success(f"✅ DVD'en '{title}' er tilføjet!")
                             st.rerun()
@@ -413,23 +392,12 @@ try:
                                     st.error("❌ Titel og instruktør er påkrævet!")
                                 else:
                                     try:
-                                        update_data = {
-                                            "title": title,
-                                            "director": director,
-                                            "theme": theme if theme else None,
-                                            "geographical_area": geographical_area if geographical_area else None,
-                                            "publication_year": publication_year if publication_year else None,
-                                            "genre": genre if genre else None,
-                                            "subgenre": subgenre if subgenre else None,
-                                            "material_type": material_type_field if material_type_field else None,
-                                            "notes": notes if notes else None,
-                                            "description": description if description else None
-                                        }
-
-                                        # Validate
+                                        update_data = build_data_dict(
+                                            title=title, director=director, theme=theme, geographical_area=geographical_area,
+                                            publication_year=publication_year, genre=genre, subgenre=subgenre,
+                                            material_type=material_type_field, notes=notes, description=description
+                                        )
                                         DVDSchema(**update_data)
-
-                                        # Update DVD
                                         dvd_crud.update(db, dvd_id, update_data)
                                         st.success(f"✅ DVD'en '{title}' er opdateret!")
                                         st.rerun()

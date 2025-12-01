@@ -142,9 +142,13 @@ def get_column_mapping():
     """Get Danish column name mappings."""
     return {
         "id": "ID",
+        "book_number": "Bognr.",
         "title": "Titel",
         "author": "Forfatter",
         "director": "Instruktør",
+        "location": "Placering",
+        "borrowed_count": "Udlånt",
+        "total_count": "I alt",
         "theme": "Tema",
         "geographical_area": "Geografisk område",
         "publication_year": "År",
@@ -154,3 +158,19 @@ def get_column_mapping():
         "notes": "Noter",
         "description": "Beskrivelse"
     }
+
+
+def to_none_if_empty(value):
+    """Convert empty string or zero to None."""
+    return value if value else None
+
+
+def build_data_dict(**kwargs):
+    """Build data dictionary, converting empty values to None."""
+    return {k: to_none_if_empty(v) if k != "borrowed_count" and k != "total_count" else v
+            for k, v in kwargs.items()}
+
+
+def render_detail_field(label, value, fallback="N/A"):
+    """Render a detail field with fallback."""
+    st.markdown(f"**{label}:** {value if value else fallback}")

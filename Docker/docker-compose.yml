@@ -15,7 +15,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - teacher_library_network
+
+  streamlit:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: teacher_library_app
+    environment:
+      DATABASE_URL: postgresql://teacher_admin:teacher_password@postgres:5432/english_teachers_library
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - teacher_library_network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  teacher_library_network:
+    driver: bridge

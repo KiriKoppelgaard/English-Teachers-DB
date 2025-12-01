@@ -9,8 +9,28 @@ from TeacherLibrary.data.database import SessionLocal, init_db
 from TeacherLibrary.models.crud import book_crud, dvd_crud
 from app.shared_utils import apply_custom_styling, render_page_header
 
-# Initialize database
-init_db()
+
+@st.cache_resource
+def initialize_database():
+    """Initialize database tables once."""
+    init_db()
+    return True
+
+
+@st.cache_data(ttl=60)  # Cache for 60 seconds
+def get_statistics():
+    """Get library statistics with caching."""
+    db = SessionLocal()
+    try:
+        total_books = len(book_crud.get_all(db))
+        total_dvds = len(dvd_crud.get_all(db))
+        return total_books, total_dvds
+    finally:
+        db.close()
+
+
+# Initialize database once
+initialize_database()
 
 # Page config
 st.set_page_config(
@@ -30,12 +50,7 @@ render_page_header(
 )
 
 # Get statistics
-db = SessionLocal()
-try:
-    total_books = len(book_crud.get_all(db))
-    total_dvds = len(dvd_crud.get_all(db))
-finally:
-    db.close()
+total_books, total_dvds = get_statistics()
 
 # Display statistics immediately after header
 st.subheader("📊 Oversigt")
@@ -63,19 +78,6 @@ with col3:
         help="Samlet antal materialer"
     )
 
-st.markdown("---")
-
-
-# Welcome message
-st.markdown("""
-<div class="info-box">
-    <h2 style="margin-top: 0;">👋 Velkommen!</h2>
-    <p style="font-size: 1.1rem; margin-bottom: 0;">
-        Dette er dit bibliotekssystem til håndtering af bøger og DVD'er.<br>
-        Vælg en sektion fra menuen til venstre for at komme i gang.
-    </p>
-</div>
-""", unsafe_allow_html=True)
 
 st.markdown("---")
 
